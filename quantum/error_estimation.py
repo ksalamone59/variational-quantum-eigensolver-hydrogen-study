@@ -142,7 +142,7 @@ def plot_error_heatmap(N_STATES, r_max, l=0):
     cbar.set_label("log10 Absolute Error (Ha)")
     ax.set_xlabel("r_max")
     ax.set_ylabel("log2(N)  (qubits)")
-    ax.scatter(min_r, np.log2(min_N), color='red', edgecolors='white', s=80, label=f"min err={min_error:.2e} at N={min_N}, r={min_r}" )
+    ax.scatter(min_r, np.log2(min_N), color='red', edgecolors='white', s=80, label=f"min err={min_error:.2e} at num_qubits={int(np.log2(min_N))}, r={min_r}" )
     ax.legend()
     ax.set_title("Discretization Error Landscape (log scale)")
 
