@@ -60,19 +60,3 @@ if __name__ == "__main__":
     print(f"Converged: {result.success}. Message: {result.message}")
     print(f"Function evaluations: {result.nfev}, Iterations: {result.nit}")
     compare_to_theory(result.fun)
-
-    times = []
-    percent_errors = []
-    for i in range(10):
-        print(f"Run {i+1}/10")
-        x0 = np.random.uniform(0, 2*np.pi, ansatz.num_parameters)
-        start_time = time.time()
-        result = minimize(cost, x0, args=(ansatz, H_pauli), method='L-BFGS-B', bounds=[(0, 2*np.pi)] * ansatz.num_parameters, options={'maxiter': 5000, 'maxfun': 2e4, "ftol" : 1e-6, "gtol" : 1e-5})
-        end_time = time.time()
-        print(f"Converged: {result.success}. Message: {result.message}")
-        times.append(end_time - start_time)
-        percent_errors.append(100 * abs(result.fun - truth_ground_state_energy) / abs(truth_ground_state_energy))
-    best_error = min(percent_errors)
-    print(f"Best error over 10 runs: {best_error:.2f}%. Best time: {min(times):.2f} seconds")
-    print(f"Average optimization time over 10 runs: {np.mean(times):.2f} seconds. Std Dev: {np.std(times):.2f} seconds.")
-    print(f"Average percent error over 10 runs: {np.mean(percent_errors):.2f}%. Std Dev: {np.std(percent_errors):.2f}%")

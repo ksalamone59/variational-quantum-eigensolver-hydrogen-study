@@ -45,6 +45,9 @@ The key distinction between these approaches is as $N$ grows, the classical appr
 ## Future Work
 Future extensions could incorporate shot-based estimation and noise models to study the robustness of VQE under realistic NISQ hardware constraints.
 
+## How to Run the Code
+After installing all dependencies, you can simply run `make` from the main directory of the repository. If you wish to run only the classical approach, run `make classic`. For just the quantum portion: `make quantum`. For just the studying of the phase space of the VQE: `make evaluation`. 
+
 # Repository Layout
 ```plaintext 
 ├── quantum/
