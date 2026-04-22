@@ -17,6 +17,7 @@ $$
 $$
 
 in atomic units. A brief note that the C++ eigensolver uses SI units, and the python VQE uses atomic units (for consistency in Qiskit implementations). The ground state energy is 
+
 $$
 E_{gs}=-13.6 \text{ eV (SI Units)} = -0.5 \text{ Ha (Atomic Units)}.
 $$
