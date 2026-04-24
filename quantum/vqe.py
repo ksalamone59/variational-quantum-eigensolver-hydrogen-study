@@ -60,3 +60,6 @@ if __name__ == "__main__":
     print(f"Converged: {result.success}. Message: {result.message}")
     print(f"Function evaluations: {result.nfev}, Iterations: {result.nit}")
     compare_to_theory(result.fun)
+
+    with open('.vqe.done', 'w') as f:
+        f.write('VQE optimization completed.')

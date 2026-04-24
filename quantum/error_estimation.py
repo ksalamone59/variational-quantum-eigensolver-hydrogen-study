@@ -137,7 +137,7 @@ def plot_error_heatmap(N_STATES, r_max, l=0):
                 min_N, min_r = N, r
     error_matrix = np.log10(error_matrix + 1e-12)
     _, ax = plt.subplots(figsize=(10, 6))
-    im = ax.imshow(error_matrix, origin='lower', aspect='auto', cmap='viridis', extent=[r_values[0], r_values[-1], np.log2(N_values[0]), np.log2(N_values[-1])] )
+    im = ax.imshow(error_matrix, origin='lower', aspect='auto', cmap='viridis' )
     cbar = plt.colorbar(im, ax=ax)
     cbar.set_label("log10 Absolute Error (Ha)")
     ax.set_xlabel("r_max")
@@ -148,6 +148,12 @@ def plot_error_heatmap(N_STATES, r_max, l=0):
 
     plt.tight_layout()
     plt.savefig("../Plots/error_heatmap.png", dpi=300)
+
+    # Output the data to a .dat file for gnuplot
+    with open("../Plotting/heatmap/heatmap.dat", "w") as f:
+        for i, N in enumerate(N_values):
+            for j, r in enumerate(r_values):
+                f.write(f"{np.log2(N)} {r} {error_matrix[i, j]}\n")
 
 if __name__ == "__main__":
     N_STATES = 16 # To match our simulation

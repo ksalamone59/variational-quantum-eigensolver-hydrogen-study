@@ -1,4 +1,4 @@
-.PHONY: all classic quantum evaluation clean
+.PHONY: all classic clean
 
 all: classic quantum evaluation plot 
 
@@ -11,17 +11,23 @@ data/wavefunctions.dat: classical/build/classical_eigensolver
 
 classic: data/wavefunctions.dat
 
-quantum: 
-	cd quantum && python3 vqe.py
+quantum: quantum/.vqe.done
 
-evaluation:
+quantum/.vqe.done: data/wavefunctions.dat quantum/vqe.py
+	cd quantum && python3 vqe.py
+	touch quantum/.vqe.done
+
+evaluation: Plots/error_heatmap.png
+
+Plots/error_heatmap.png: quantum/.vqe.done quantum/error_estimation.py
 	cd quantum && python3 error_estimation.py
 
 plot: 
-	cd Plotting/ && make 
-
+	$(MAKE) -C Plotting/
+	
 clean:
 	cd Plotting/ && make clean 
 	rm -rf classical/build
 	rm -f data/*
 	rm -f Plots/*
+	rm -f quantum/.vqe.done
