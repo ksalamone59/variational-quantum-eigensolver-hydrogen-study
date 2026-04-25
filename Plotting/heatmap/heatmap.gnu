@@ -7,7 +7,7 @@ set rmargin 7
 
 set xlabel '$r_{\text{max}}$'
 set ylabel 'Number of Qubits' offset -2,0
-set cblabel '$\log_{2}(\text{Error})$' offset 4,0
+set cblabel '$\log_{10}(\text{Error})$' offset 4,0
 set title 'Error Heatmap for VQE Simulation'
 
 set xrange[0.5:9.5]
