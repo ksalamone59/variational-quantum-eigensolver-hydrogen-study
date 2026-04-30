@@ -124,36 +124,74 @@ Scan across phase space of N and r_max to find "best" attainable energy and, thu
 def plot_error_heatmap(N_STATES, r_max, l=0):
     N_values = np.array([2**i for i in range(1, N_STATES)])
     r_values = np.arange(1., r_max, 1.)
+
     error_matrix = np.zeros((len(N_values), len(r_values)))
+
     min_error = float('inf')
     min_N, min_r = None, None
+
     for i, N in enumerate(N_values):
         for j, r in enumerate(r_values):
             energy = find_gs_energy(N, r, l)
             err = abs(energy - TRUTH_GS_ENERGY)
             error_matrix[i, j] = err
+
             if err < min_error:
                 min_error = err
                 min_N, min_r = N, r
-    error_matrix = np.log10(error_matrix + 1e-12)
-    _, ax = plt.subplots(figsize=(10, 6))
-    im = ax.imshow(error_matrix, origin='lower', aspect='auto', cmap='viridis' )
+
+    # Log scale AFTER min search
+    log_error_matrix = np.log10(error_matrix + 1e-12)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # 🔥 FIX 1: map pixels → physical coordinates
+    im = ax.imshow(
+        log_error_matrix,
+        origin='lower',
+        aspect='auto',
+        cmap='viridis',
+        extent=[
+            r_values[0], r_values[-1],
+            np.log2(N_values[0]), np.log2(N_values[-1])
+        ]
+    )
+
     cbar = plt.colorbar(im, ax=ax)
     cbar.set_label("log10 Absolute Error (Ha)")
+
+    # 🔥 FIX 2: correct axes
     ax.set_xlabel("r_max")
-    ax.set_ylabel("log2(N)  (qubits)")
-    ax.scatter(min_r, np.log2(min_N)-0.5, color='red', edgecolors='white', s=80, label=f"min err={min_error:.2e} at num_qubits={int(np.log2(min_N))}, r={min_r}" )
+    ax.set_ylabel("Number of Qubits (log2 N)")
+
+    # 🔥 FIX 3: plot minimum in correct coordinate system
+    ax.scatter(
+        min_r,
+        np.log2(min_N),
+        color='red',
+        edgecolors='white',
+        s=80,
+        label=f"min err = {min_error:.2e}\n(qubits={int(np.log2(min_N))}, r={min_r})"
+    )
+
     ax.legend()
     ax.set_title("Discretization Error Landscape (log scale)")
 
     plt.tight_layout()
     plt.savefig("../Plots/error_heatmap.png", dpi=300)
 
-    # Output the data to a .dat file for gnuplot
+    # 🔥 FIX 4: write NON-LOG error (more useful for analysis)
     with open("../Plotting/heatmap/heatmap.dat", "w") as f:
         for i, N in enumerate(N_values):
             for j, r in enumerate(r_values):
                 f.write(f"{np.log2(N)} {r} {error_matrix[i, j]}\n")
+
+    # 🔥 FIX 5: print best point clearly
+    print("\n=== BEST PARAMS FROM HEATMAP ===")
+    print(f"log2(N) = {int(np.log2(min_N))}")
+    print(f"N       = {min_N}")
+    print(f"r_max   = {min_r}")
+    print(f"error   = {min_error:.6e}")
 
 if __name__ == "__main__":
     N_STATES = 16 # To match our simulation
