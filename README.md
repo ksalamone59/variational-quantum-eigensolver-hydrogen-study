@@ -57,6 +57,8 @@ After installing all dependencies, you can simply run `make` from the main direc
 ├── Plots/
 ├── Plotting/
 ├── Makefile
+├── LICENSE
+├── requirements.txt
 ├── README.md
 ```
 
@@ -69,6 +71,8 @@ After installing all dependencies, you can simply run `make` from the main direc
 - `data/`: Directory that contains data for output wavefunctions from classical approach
 - `Makefile`: Top-level Makefile that, upon running "make", will run all the code and produce the output comparisons
 - `Plots/`: Directory that contains output of `error_estimation.py`, including various quantitative evaluations of the VQE project on Hydrogen. As well, output wave functions from the classical approach (done in the `Plotting/` directory)
+- `LICENSE`: MIT License for this repo 
+- `requirements.txt`: requirements for this repository in python. Can run `pip install requirements.txt` for simplicity.
 - `Plotting/`: usage of [gnuplot-latex-utils](https://github.com/ksalamone59/gnuplot_latex_utils) as a submodule to create publication-quality plots on the fly through gnuplot and LaTeX. Please see original documentation for more information.
     - `wave_functions/`: Directory that plots the extracted wave functions from the classical approach vs the analytic curves.
     - `pdfs/`: Where the output pdf is stored/
