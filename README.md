@@ -1,10 +1,29 @@
 # Overview
-A project that benchmarks and compares two approaches to handling the energy levels of the hydrogen atom:
+This project analyzes the practical limits of Variational Quantum Eigensolvers (VQE) by separating two dominant sources of error:
 
-1. A pure C++ Eigen based linear decomposition of the Hamiltonian
+- **Discretization Error** from finite difference representations of the Hamiltonian
+- **Variational Error** from ansatz expressibility and optimization
+
+Rather than evaluating VQE in isolation, it is benchmarked against the best achievable classical solution under identical discretization constraints.
+
+The project evaluates this by computing the ground state energy level of the Hydrogen atom in two different ways:
+
+1. A pure C++ Eigen based eigendecomposition of the Hamiltonian for high resolution, exact decomposition
 2. Using qiskit in Python to perform a VQE on the Hamiltonian 
 
-The analytic hamiltonian for the radial component of the wavefunction $u(r)=rR(r)$ may be represented as 
+---
+
+## Key Insight
+
+> **In low-qubit regimes, VQE performance is fundamentally constrained by the discretization of the Hamiltonian, not by one's choice of optimizer or ansatz.**
+> 
+> **This project shows that improving quantum performance requires improving the *problem representation*, not just the quantum algorithm.**
+
+---
+
+## Physical Model 
+
+The analytic Hamiltonian for the radial component of the wavefunction $u(r)=rR(r)$ may be represented as 
 
 $$
  \hat{H}=\left(-\dfrac{\hbar^{2}}{2m_{e}}\dfrac{d^{2}}{dr^{2}} - \dfrac{e^{2}}{4\pi\varepsilon_{0}r} + \dfrac{\hbar^{2}\ell\left(\ell+1\right)}{2m_{e}r^{2}}\right)
@@ -23,9 +42,45 @@ E_{gs}=-13.6 \text{ eV (SI Units)} = -0.5 \text{ Ha (Atomic Units)}.
 $$
 
 ## Methodology
-While exact diagonalization (C++ approach) scales as O($N^{3}$) where N is the size of the discretized Hamiltonian basis, VQE embeds this problem into exponentially fewer qubits. The number of qubits chosen takes the form $\lceil\log_{2}\left(N_{states}\right)\rceil $. As written the code only accepts exact powers of 2 as the number of states. This can easily be expanded upon by padding the basis to get to the next power of 2. Optimization is performed classically on the expectation value of the Hamiltonian.
+<!-- While exact diagonalization (C++ approach) scales as O($N^{3}$) where N is the size of the discretized Hamiltonian basis, VQE embeds this problem into exponentially fewer qubits. The number of qubits chosen takes the form $\lceil\log_{2}\left(N_{states}\right)\rceil $. As written the code only accepts exact powers of 2 as the number of states. This can easily be expanded upon by padding the basis to get to the next power of 2. Optimization is performed classically on the expectation value of the Hamiltonian. -->
+---
+### 1. Finite Difference Discretization 
+- Choose grid size $N$
+- Choose maximum radial cutoff $r_{\max}$
+---
+### 2. Classical Baseline (C++)
+- Exact diagonalization using Eigen
+- Scaling: $O(N^{3})$
+- Outputs:
+    - First $N$ energies (default: ground state energy) in eV
+    - Wavefunctions (default: ground and first excited state)
+    - Discretization error observation 
+---
+### 3. VQE Approximation
+- Encodes system using $\lceil\log_{2}\left(N_{states}\right)\rceil$ qubits 
+- Ansatz: hardware-efficient SU(2)
+- Optimizer: L-BFGS-B
+- Simulator: statevector 
+- Outputs:
+    - Ground state energy (in Ha)
+---
+### 4. Error Decomposition (Core Result)
+We separate total VQE error into 
+$$\text{Total Error} = \text{Discretization Error} + \text{Variational Error}$$
+
+Procedure:
+- For each $N, r_{max}$:  
+    - Compute the *theoretical lower bound* via exact diagonalization under the same discretization
+    - Compare VQE output to this lower bound     
+
+This isolates 
+- Error due to finite-resolution discretization (numerical precision) 
+- Error due to variational uncertainty (quantum algorithm)
+
+---
 
 ## Key Results
+The quantitative results below should be interpreted relative to the discretization limits identified in the error landscape.
 - Classical Solver ($N=1000$)
     - Error: $~0.02\%$
     - Runtime: $~0.3$ seconds
@@ -38,10 +93,36 @@ While exact diagonalization (C++ approach) scales as O($N^{3}$) where N is the s
 
 Variability in the VQE approach arises from sensitivity to initial parameter choice, as well as the non-convex optimization landscape. In a more expressive ansatz, the barren plateau effect may become more significant due to the expressibility and depth of the ansatz.
 
-## Interpretation 
-The classical approach uses a significantly larger basis ($N$=1000) than the quantum implementation ($N$=16). This is intentional: the goal is not a like-for-like comparison, but to evaluate how well a low-qubit VQE can approximate the ground state energy under constrained Hilbert space representations and a limited ansatz.
+### Error Landscape (Main Result)
+![](heatmap.png)
+Results of scanning phase space of number of qubits vs $r_{\max}$ to see the minimum error. Key takeaways:
+- Increasing qubits alone does not guarantee better error performance; neither does increasing or decreasing $r_{\max}$
+    - Each set ($N_{\text{qubits}}, r_{\max}$) has an optimal solution that balances each error to find the minima
+- Discretization error often dominates 
+---
+### Wavefunction Validation
+![](waveFunctions.png)
+Classical solutions match analytic hydrogen wavefunctions, validating our choice of discretization. 
 
-The key distinction between these approaches is as $N$ grows, the classical approach becomes increasingly computationally expensive, and VQE compresses the Hilbert space. VQE encodes the system into a logarithmic number of qubits with respect to the discretized basis size, but shifts computational complexity into repeated circuit evaluations and classical optimization. For example: for $N=2048$, classically you have to use eigendecomposition on a $2048\times2048$ matrix. However, using VQE, one requires 11 qubits to represent the discretized basis under binary encoding.
+---
+## Interpretation 
+The classical method operates in a large Hilbert space ($N=1000$), while the VQE compresses the system into $\log_{2}\left(N\right)$ qubits. 
+
+- Classical: increasing accuracy $\rightarrow$ higher computational cost 
+- VQE - reduced dimensionality $\rightarrow$ increased optimization complexity 
+
+For example: $N=2048$ requires diagonalizing a $2048 \times 2048$ matrix classically, but only 11 qubits under binary encoding.
+
+**Implication**: In low-qubit regimes, improving VQE performance is often a bottleneck on numerical modeling and problem framing, not on the quantum algorithm. 
+
+---
+
+## Engineering Highlights
+- Cross-language pipeline: C++ (Eigen) + Python (Qiskit)
+- Automated sweeps over $\left(N, r_{\max}\right)$ for error mapping 
+- Reproducible plotting via gnuplot + LaTeX 
+- Numerical stability near $r\to0$
+- End-to-end pipeline via Makefile
 
 ## Future Work
 Future extensions could incorporate shot-based estimation and noise models to study the robustness of VQE under realistic NISQ hardware constraints.
@@ -90,9 +171,3 @@ After installing all dependencies, you can simply run `make` from the main direc
 - Dependencies outlined in [gnuplot-latex-utils](https://github.com/ksalamone59/gnuplot_latex_utils) including 
     - Gnuplot 
     - LaTeX
-
-# Results 
-1. Heatmap of minimum achievable VQE error as a function of qubit count and maximum radial cutoff r_max. The optimal configuration (9 qubits, r_max = 9.0) is highlighted.
-![](heatmap.png)
-2. Comparison of numerically computed eigenfunctions (C++ diagonalization) with analytic hydrogen wavefunctions for the ground and first excited states.
-![](waveFunctions.png)
