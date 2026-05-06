@@ -4,7 +4,7 @@ set out "vqe_err.tex"
 set lmargin 10
 set rmargin 10
 
-set title "Variational Error"
+set title "Variational Error for VQE Simulation"
 set xlabel '$r_{\text{max}}$'
 set ylabel 'Number of Qubits' offset -2,0
 set cblabel '$\log_{10}(\text{Error})$' offset 4,0
