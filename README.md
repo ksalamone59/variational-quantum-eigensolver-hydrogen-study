@@ -11,14 +11,21 @@ The project evaluates this by computing the ground state energy level of the Hyd
 1. A pure C++ Eigen based eigendecomposition of the Hamiltonian for high resolution, exact decomposition
 2. Using qiskit in Python to perform a VQE on the Hamiltonian 
 
+## TL;DR
+This work demonstrates that in the low-qubit VQE simulations of the Hydrogen atom, discretization error dominates algorithmic error. This suggests that VQE is better understood as a representation-limited, rather than optimization-limited, problem
+
+We showcase how both discretization and variational errors transform as a function of $\left(N_{\text{qubits}}, r_{\max}\right)$, as well as how the runtime evolves in each region.
+
 ---
 
-## Key Insight
+## Key Insights
 
-> **In low-qubit regimes, VQE performance is fundamentally constrained by the discretization of the Hamiltonian, not by one's choice of optimizer or ansatz.**
-> 
-> **This project shows that improving quantum performance requires improving the *problem representation*, not just the quantum algorithm.**
-
+- In low-qubit regimes, VQE error is dominated by Hamiltonian discretization, not ansatz or optimizer choice.
+- Improving VQE performance requires improving the problem representation (discretization + encoding), not only the quantum circuit.
+- Classical exact diagonalization provides a much more stable and accurate baseline under the same discretization constraints.
+- Increasing the number of qubits alone does not guarantee improved accuracy without corresponding improvements in the underlying discretized model.
+- The dominant error source transitions from discretization-limited → variational-limited as system expressibility increases.
+- This project reframes VQE evaluation as a representation-limited simulation problem rather than purely an optimization problem.
 ---
 
 ## Physical Model 
@@ -42,7 +49,6 @@ E_{gs}=-13.6 \text{ eV (SI Units)} = -0.5 \text{ Ha (Atomic Units)}.
 $$
 
 ## Methodology
-<!-- While exact diagonalization (C++ approach) scales as O($N^{3}$) where N is the size of the discretized Hamiltonian basis, VQE embeds this problem into exponentially fewer qubits. The number of qubits chosen takes the form $\lceil\log_{2}\left(N_{states}\right)\rceil $. As written the code only accepts exact powers of 2 as the number of states. This can easily be expanded upon by padding the basis to get to the next power of 2. Optimization is performed classically on the expectation value of the Hamiltonian. -->
 ---
 ### 1. Finite Difference Discretization 
 - Choose grid size $N$
@@ -82,23 +88,42 @@ This isolates
 ## Key Results
 The quantitative results below should be interpreted relative to the discretization limits identified in the error landscape.
 - Classical Solver ($N=1000$)
-    - Error: $~0.02\%$
-    - Runtime: $~0.3$ seconds
+    - Error: $\approx0.02\%$
+    - Runtime: $\approx0.3$ seconds
     - Deterministic result 
-- VQE (4 qubits, $N=16$)
-    - Mean error: $4.13\pm0.95\%$
-    - Best error: $3.40\%$
-    - Runtime: $13.83\pm7.29$ seconds
-    - Best runtime: $5.11$ seconds
+- Chosen VQE (3 qubits, $N=8$, $r_{\text{max}}=16$)
+    - Mean error: $38.50\pm0.55\%$
+    - Best error: $38.20\%$
+    - Runtime: $0.17\pm0.05$ seconds
+    - Best runtime: $0.12$ seconds
+    - Number of restarts: 10
+
+The number of qubits and $r_{\text{max}}$ were chosen based on scanning the phase space of Variational error to see where this was minimized with respect to the discrete result. This is not the same as the optimal $\left(N_{\text{qubits}}, r_{\text{max}}\right)$ with respect to the true ground state energy. This was chosen to optimize run speed and showcase that at low qubits, the discretization uncertainty dominates. 
+
+Combining the key results plots below allows for a detailed study into the optimal tradeoffs between the number of qubits, maximum radius in Hamiltonian discretization and the resulting "best case" energy for this setup.
 
 Variability in the VQE approach arises from sensitivity to initial parameter choice, as well as the non-convex optimization landscape. In a more expressive ansatz, the barren plateau effect may become more significant due to the expressibility and depth of the ansatz.
 
-### Error Landscape (Main Result)
+### Discretization Error Landscape
 ![](heatmap.png)
 Results of scanning phase space of number of qubits vs $r_{\max}$ to see the minimum error. Key takeaways:
 - Increasing qubits alone does not guarantee better error performance; neither does increasing or decreasing $r_{\max}$
     - Each set ($N_{\text{qubits}}, r_{\max}$) has an optimal solution that balances each error to find the minima
-- Discretization error often dominates 
+    - *The impact of discretization error is reduced as the effective resolution of the encoded system increases with additional qubits*
+---
+### Variational Error Landscape
+![](vqe_err.png)
+Results of scanning phase space of number of qubits vs $r_{\max}$, taking the error as $\lvert E_{\text{VQE}} - E_{\text{disc.}}\rvert$. 
+- As the number of qubits increases, the variational error (with respect to the discretization error) increases 
+- At low qubits ($N_{\text{qubits}}=1$), the landscape is trivially covered, leading to very small variational uncertainty
+
+---
+### Time as a Function of $N_{\text{qubits}}, r_{\max}$
+![](time_scan.png)
+Average time to perform minimization of ansatz as a function of number of qubits and $r_{\text{max}}$.
+- 10 runs per bin
+- As the number of qubits increases, the average runtime exponentially increases $\rightarrow$ *run time must also be considered when choosing optimal running parameters*
+
 ---
 ### Wavefunction Validation
 ![](waveFunctions.png)
@@ -113,7 +138,7 @@ The classical method operates in a large Hilbert space ($N=1000$), while the VQE
 
 For example: $N=2048$ requires diagonalizing a $2048 \times 2048$ matrix classically, but only 11 qubits under binary encoding.
 
-**Implication**: In low-qubit regimes, improving VQE performance is often a bottleneck on numerical modeling and problem framing, not on the quantum algorithm. 
+**Implication**: In low-qubit regimes, improving VQE performance is often a bottleneck on numerical modeling and problem framing, not on the quantum algorithm. As the number of qubits grows, the variational error becomes the bottleneck due to features such as optimization landscape complexity.
 
 ---
 
